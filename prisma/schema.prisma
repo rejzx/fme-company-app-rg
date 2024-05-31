@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id            String         @id @default(cuid())
+  firstname     String
+  surname       String
+  email         String         @unique
+  image         String?
+  password      String
+  post          Post?          @relation("StudentPost")
+  messages      Message[]
+  notifications Notification[]
+}
+
+model Post {
+  id              String           @id @default(cuid())
+  content         String  // Content of the post
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  student         Student          @relation("StudentPost", fields: [studentId], references: [id])
+  studentId       String           @unique
+  education       Education[]      @relation("Education")
+  workExperiences WorkExperience[] @relation("WorkExperiences")
+  skills          Skill[]          @relation("Skill")
+  messages        Message[] // Related messages from various companies
+}
+
+// Work experience details linked to a post
+model WorkExperience {
+  id        String @id @default(cuid())
+  company   String
+  position  String
+  location  String
+  startDate String
+  endDate   String
+  postId    String
+  post      Post?  @relation("WorkExperiences", fields: [postId], references: [id])
+}
+
+// Skills, which can include programming languages and other skills
+model Skill {
+  id        String @id @default(cuid())
+  skillName String  // 'programmingLanguages' or 'other'
+  level     String
+  postId    String
+  post      Post?  @relation("Skill", fields: [postId], references: [id])
+}
+
+// Education details linked to a post
+model Education {
+  id               String @id @default(cuid())
+  degree           String
+  institution      String
+  yearOfGraduation Int
+  postId           String
+  post             Post   @relation("Education", fields: [postId], references: [id])
+}
+
+model Company {
+  id           String    @id @default(cuid())
+  name         String?
+  email        String    @unique
+  password     String
+  image        String?
+  messagesSent Message[] // Messages sent to students
+}
+
+model Message {
+  id            String   @id @default(cuid())
+  content       String  // Content of the message
+  fromCompanyId String  // ID of the company sending the message
+  toStudentId   String  // ID of the student receiving the message
+  postId        String  // ID of the post the message is regarding
+  createdAt     DateTime @default(now())
+  viewed        Boolean  @default(false)  // Whether the message has been viewed
+  company       Company  @relation(fields: [fromCompanyId], references: [id])
+  student       Student  @relation(fields: [toStudentId], references: [id])
+  post          Post      @relation(fields: [postId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String  // Notification message
+  studentId String  // ID of the student who receives the notification
+  createdAt DateTime @default(now())
+  viewed    Boolean  @default(false) // Whether the notification has been viewed
+  student   Student  @relation(fields: [studentId], references: [id])
+}
